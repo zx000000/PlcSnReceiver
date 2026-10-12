@@ -1,0 +1,16 @@
+# 编译产物
+bin/
+obj/
+
+# Visual Studio
+.vs/
+
+# 运行生成的本地数据与配置（各自实例独立，不入库）
+*.db
+*.db-shm
+*.db-wal
+config.json
+
+# 临时文件
+*.tmp
+*.log
