@@ -237,6 +237,10 @@ public class FinsUdpClient : IDisposable
             DataTypeEnum.Int16 => ((short)words[0]).ToString(),
             DataTypeEnum.UInt32 => ((uint)((words[0] << 16) | words[1])).ToString(),
             DataTypeEnum.Int32 => ((short)words[0] << 16 | words[1]).ToString(),
+            // IEEE754 浮点：大端序（高字在前）。Float32=2寄存器，Float64=4寄存器
+            DataTypeEnum.Float32 => BitConverter.UInt32BitsToSingle(((uint)words[0] << 16) | words[1]).ToString("G"),
+            DataTypeEnum.Float64 => BitConverter.UInt64BitsToDouble(
+                ((ulong)words[0] << 48) | ((ulong)words[1] << 32) | ((ulong)words[2] << 16) | words[3]).ToString("G"),
             _ => DecodeAscii(words, item.Encoding)
         };
     }

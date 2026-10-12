@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -11,11 +13,19 @@ namespace PlcSnReceiver.UserControls;
 
 public partial class QueryPage : UserControl
 {
-    public ObservableCollection<PlcRecord> QueryResultList { get; } = new();
+    /// <summary>通道信息：名称 + 独立库服务 + 配置（数据项随通道）</summary>
+    private class ChannelInfo
+    {
+        public string Name = "";
+        public SqliteDbService Db = null!;
+        public ChannelConfig Channel = null!;
+    }
 
-    private SqliteDbService? _db;
+    private readonly List<ChannelInfo> _channels = new();
     private AppConfig? _cfg;
-    private System.Collections.Generic.List<PlcRecord> _lastResult = new();
+    private List<PlcRecord> _lastResult = new();
+
+    public ObservableCollection<PlcRecord> QueryResultList { get; } = new();
 
     public QueryPage()
     {
@@ -24,57 +34,82 @@ public partial class QueryPage : UserControl
         DpStart.SelectedDate = DateTime.Now.AddDays(-1);
         DpEnd.SelectedDate = DateTime.Now;
 
+        CboChannel.SelectionChanged += (_, _) => OnChannelChanged();
         BtnQuery.Click += (_, _) => DoQuery();
         BtnReset.Click += (_, _) => DoReset();
         BtnExportQuery.Click += (_, _) => ExportCsv();
     }
 
-    public void BindService(SqliteDbService db, AppConfig cfg)
+    /// <summary>由 MainWindow 注入所有通道的数据库服务。</summary>
+    public void BindService(List<SqliteDbService> dbs, AppConfig cfg)
     {
-        _db = db;
         _cfg = cfg;
+        RebuildChannels(dbs, cfg);
+    }
 
-        // 重建字段下拉框（跟随配置的数据项）
-        CboField.Items.Clear();
-        foreach (var di in cfg.DataItems)
-            CboField.Items.Add(di.FieldName);
-        if (CboField.Items.Count > 0)
-            CboField.SelectedIndex = 0;
+    /// <summary>配置保存后重建通道下拉与列。</summary>
+    public void UpdateConfig(List<SqliteDbService> dbs, AppConfig cfg)
+    {
+        _cfg = cfg;
+        RebuildChannels(dbs, cfg);
+    }
+
+    private void RebuildChannels(List<SqliteDbService> dbs, AppConfig cfg)
+    {
+        _channels.Clear();
+        for (int i = 0; i < cfg.Channels.Count && i < dbs.Count; i++)
+        {
+            _channels.Add(new ChannelInfo
+            {
+                Name = cfg.Channels[i].Name,
+                Db = dbs[i],
+                Channel = cfg.Channels[i]
+            });
+        }
+
+        CboChannel.Items.Clear();
+        foreach (var c in _channels)
+            CboChannel.Items.Add(c.Name);
+        if (_channels.Count > 0)
+            CboChannel.SelectedIndex = 0;
 
         BuildColumns();
     }
 
-    /// <summary>配置保存后刷新引用并重建列（数据项可能变化）。</summary>
-    public void UpdateConfig(AppConfig cfg)
+    private ChannelInfo? Current =>
+        CboChannel.SelectedIndex >= 0 && CboChannel.SelectedIndex < _channels.Count
+            ? _channels[CboChannel.SelectedIndex]
+            : null;
+
+    /// <summary>切换通道时重建字段下拉框与结果列（各通道数据项可能不同）。</summary>
+    private void OnChannelChanged()
     {
-        _cfg = cfg;
+        var cur = Current;
+
         CboField.Items.Clear();
-        foreach (var di in cfg.DataItems)
-            CboField.Items.Add(di.FieldName);
-        if (CboField.Items.Count > 0)
-            CboField.SelectedIndex = 0;
+        if (cur != null)
+        {
+            foreach (var di in cur.Channel.DataItems)
+                CboField.Items.Add(di.FieldName);
+            if (CboField.Items.Count > 0)
+                CboField.SelectedIndex = 0;
+        }
+
+        QueryResultList.Clear();
+        _lastResult.Clear();
+        TxtCount.Text = "共 0 条";
         BuildColumns();
     }
 
-    /// <summary>根据配置动态生成查询结果列。</summary>
+    /// <summary>根据当前选中通道的数据项动态生成查询结果列。</summary>
     public void BuildColumns()
     {
         DgQueryResult.Columns.Clear();
-        DgQueryResult.Columns.Add(new DataGridTextColumn
+        DgQueryResult.Columns.Add(new DataGridTextColumn { Header = "序号", Width = 55, Binding = new Binding("Id") });
+        DgQueryResult.Columns.Add(new DataGridTextColumn { Header = "接收时间", Width = 175, Binding = new Binding("ReceiveTime") { StringFormat = "yyyy-MM-dd HH:mm:ss" } });
+        if (Current != null)
         {
-            Header = "序号",
-            Width = 55,
-            Binding = new Binding("Id")
-        });
-        DgQueryResult.Columns.Add(new DataGridTextColumn
-        {
-            Header = "接收时间",
-            Width = 175,
-            Binding = new Binding("ReceiveTime") { StringFormat = "yyyy-MM-dd HH:mm:ss" }
-        });
-        if (_cfg != null)
-        {
-            foreach (var di in _cfg.DataItems)
+            foreach (var di in Current.Channel.DataItems)
             {
                 DgQueryResult.Columns.Add(new DataGridTextColumn
                 {
@@ -84,17 +119,13 @@ public partial class QueryPage : UserControl
                 });
             }
         }
-        DgQueryResult.Columns.Add(new DataGridTextColumn
-        {
-            Header = "备注",
-            Width = 70,
-            Binding = new Binding("Status")
-        });
+        DgQueryResult.Columns.Add(new DataGridTextColumn { Header = "备注", Width = 70, Binding = new Binding("Status") });
     }
 
     private void DoQuery()
     {
-        if (_db == null || _cfg == null) return;
+        var cur = Current;
+        if (cur == null) return;
 
         var start = DpStart.SelectedDate ?? DateTime.Now.AddDays(-1);
         var end = DpEnd.SelectedDate ?? DateTime.Now;
@@ -108,7 +139,7 @@ public partial class QueryPage : UserControl
 
         try
         {
-            _lastResult = _db.QueryByTime(t1, t2, field, keyword);
+            _lastResult = cur.Db.QueryByTime(t1, t2, field, keyword);
             QueryResultList.Clear();
             foreach (var r in _lastResult)
                 QueryResultList.Add(r);
@@ -133,7 +164,8 @@ public partial class QueryPage : UserControl
 
     private void ExportCsv()
     {
-        if (_cfg == null) return;
+        var cur = Current;
+        if (cur == null) return;
         if (_lastResult.Count == 0)
         {
             MessageBox.Show("当前查询结果为空，无可导出数据。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -143,13 +175,13 @@ public partial class QueryPage : UserControl
         var dlg = new SaveFileDialog
         {
             Filter = "CSV 文件 (*.csv)|*.csv",
-            FileName = $"查询结果_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+            FileName = $"查询结果_{cur.Name}_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
         };
         if (dlg.ShowDialog() != true) return;
 
         try
         {
-            CsvExporter.Export(_lastResult, _cfg.DataItems, dlg.FileName);
+            CsvExporter.Export(_lastResult, cur.Channel.DataItems, dlg.FileName);
             MessageBox.Show($"导出成功：{dlg.FileName}", "完成", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)

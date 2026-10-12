@@ -7,7 +7,11 @@ public enum DataTypeEnum
     UInt16,
     Int16,
     UInt32,
-    Int32
+    Int32,
+    /// <summary>单精度浮点数（IEEE754，占用 2 个连续寄存器，大端）</summary>
+    Float32,
+    /// <summary>双精度浮点数（IEEE754，占用 4 个连续寄存器，大端）</summary>
+    Float64
 }
 
 /// <summary>字符串编码方式（欧姆龙FINS DM区常见ASCII）</summary>

@@ -13,6 +13,8 @@
             <models:DataTypeEnum>Int16</models:DataTypeEnum>
             <models:DataTypeEnum>UInt32</models:DataTypeEnum>
             <models:DataTypeEnum>Int32</models:DataTypeEnum>
+            <models:DataTypeEnum>Float32</models:DataTypeEnum>
+            <models:DataTypeEnum>Float64</models:DataTypeEnum>
         </x:Array>
         <x:Array x:Key="Encodings" Type="{x:Type models:StringEncoding}">
             <models:StringEncoding>Ascii</models:StringEncoding>
@@ -20,98 +22,72 @@
         </x:Array>
     </UserControl.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="10">
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="230"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-            <!-- FINS UDP 通信设置 -->
-            <GroupBox Header="FINS UDP PLC 通信设置" Margin="0 0 0 10">
-                <Grid Margin="5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="130"/>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+        <!-- 左侧：通道列表 -->
+        <GroupBox Header="通道列表" Grid.Column="0" Margin="0 0 8 0">
+            <StackPanel Margin="5">
+                <ListBox x:Name="LsChannels" Height="320" DisplayMemberPath="Name"/>
+                <Button x:Name="BtnAddChannel" Content="＋ 新增通道" Margin="0 8 0 0" Height="28"/>
+                <Button x:Name="BtnDelChannel" Content="－ 删除选中通道" Margin="0 6 0 0" Height="28"/>
+                <TextBlock Text="每个通道独立 PLC 通信参数、触发与数据项，并有独立数据库文件（ChannelN.db），互不干扰。"
+                           Foreground="Gray" TextWrapping="Wrap" Margin="0 12 0 0"/>
+            </StackPanel>
+        </GroupBox>
 
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="PLC IP 地址：" VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="TxtPlcIp" Margin="0 0 0 4"/>
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="PLC FINS 端口：" VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="TxtPlcPort" Margin="0 0 0 4"/>
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="本机监听端口：" VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="TxtLocalPort" Margin="0 0 0 4"/>
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="FINS 本地节点号：" VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="TxtLocalNode" Margin="0 0 0 4"/>
-                    <TextBlock Grid.Row="4" Grid.Column="0" Text="FINS PLC 节点号：" VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="4" Grid.Column="1" x:Name="TxtPlcNode"/>
-                </Grid>
-            </GroupBox>
+        <!-- 右侧：选中通道参数 + 全局 -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="5">
 
-            <!-- 全局触发寄存器 -->
-            <GroupBox Header="全局触发信号" Margin="0 0 0 10">
-                <Grid Margin="5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="130"/>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="130"/>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="触发寄存器地址：" VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="TxtTriggerAddr" Margin="0 0 15 0"/>
-                    <TextBlock Grid.Row="0" Grid.Column="2" Text="轮询周期(ms)：" VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="0" Grid.Column="3" x:Name="TxtPollMs" Margin="0 0 15 0"/>
-                    <CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" x:Name="ChkReset"
-                               Content="读取完成后复位触发寄存器为0" VerticalAlignment="Center"/>
-                </Grid>
-            </GroupBox>
-
-            <!-- 采集数据项 -->
-            <GroupBox Header="采集数据项（SN1/SN2/数量等，可动态增删，UI表格列自动跟随）" Margin="0 0 0 10">
-                <StackPanel Margin="5">
-                    <StackPanel Orientation="Horizontal">
-                        <Button x:Name="BtnAddItem" Content="＋ 新增数据项" Width="120"/>
-                        <Button x:Name="BtnDelItem" Content="－ 删除选中项" Width="120" Margin="10 0 0 0"/>
-                        <TextBlock Text="（字段名称即表格列名，寄存器地址支持 D110 / W20 / H5 等）"
-                                   Foreground="Gray" VerticalAlignment="Center" Margin="20 0 0 0"/>
+                <!-- 选中通道：名称（可自定义/修改） -->
+                <GroupBox Header="选中通道：名称" Margin="0 0 0 10">
+                    <StackPanel Orientation="Horizontal" Margin="5">
+                        <TextBlock Text="通道名称：" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtChannelName" Width="220" VerticalAlignment="Center"/>
+                        <TextBlock Text="（用于监控页签标题与查询下拉，保存后生效，不能与其他通道重名）"
+                                   Foreground="Gray" VerticalAlignment="Center" Margin="12 0 0 0"/>
                     </StackPanel>
-                    <DataGrid x:Name="DgDataItems" Margin="0 8 0 0" Height="210"
-                              AutoGenerateColumns="False" CanUserAddRows="False"
-                              AlternatingRowBackground="#F5F6F8">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="字段名称" Binding="{Binding FieldName}"
-                                                Width="*"/>
-                            <DataGridTextColumn Header="寄存器地址" Binding="{Binding RegisterAddr}"
-                                                Width="*"/>
-                            <DataGridComboBoxColumn Header="数据类型" Width="110"
-                                                    ItemsSource="{StaticResource DataTypes}"
-                                                    SelectedItemBinding="{Binding DataType}"/>
-                            <DataGridTextColumn Header="寄存器数量" Binding="{Binding RegisterCount}"
-                                                Width="90"/>
-                            <DataGridComboBoxColumn Header="编码格式" Width="100"
-                                                    ItemsSource="{StaticResource Encodings}"
-                                                    SelectedItemBinding="{Binding Encoding}"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </StackPanel>
-            </GroupBox>
+                </GroupBox>
 
-            <!-- 存储选项 -->
-            <GroupBox Header="本地存储" Margin="0 0 0 10">
-                <StackPanel Margin="5">
-                    <CheckBox x:Name="ChkAutoSave" Content="自动保存接收记录到 SQLite 数据库（config.json 与 records.db 存放在程序运行目录）" Margin="0 0 0 8"/>
-                    <Grid>
+                <!-- 选中通道：FINS UDP 通信 -->
+                <GroupBox Header="选中通道：FINS UDP PLC 通信设置" Margin="0 0 0 10">
+                    <Grid Margin="5">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="PLC IP 地址：" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="TxtPlcIp" Margin="0 0 0 4"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="PLC FINS 端口：" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="TxtPlcPort" Margin="0 0 0 4"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="本机监听端口：" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" x:Name="TxtLocalPort" Margin="0 0 0 4"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="FINS 本地节点号：" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="3" Grid.Column="1" x:Name="TxtLocalNode" Margin="0 0 0 4"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="FINS PLC 节点号：" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" x:Name="TxtPlcNode"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- 选中通道：触发信号 -->
+                <GroupBox Header="选中通道：触发信号" Margin="0 0 0 10">
+                    <Grid Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="140"/>
                             <ColumnDefinition Width="180"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
@@ -119,22 +95,79 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="监控列表最多保留(条)：" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="TxtMaxListRows" Margin="0 0 0 4"/>
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="日志最多保留(行)：" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="TxtMaxLogLines"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="触发寄存器地址：" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="TxtTriggerAddr" Margin="0 0 15 0"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="轮询周期(ms)：" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="3" x:Name="TxtPollMs" Margin="0 0 15 0"/>
+                        <CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" x:Name="ChkReset"
+                                   Content="读取完成后复位触发寄存器为0" VerticalAlignment="Center"/>
                     </Grid>
-                </StackPanel>
-            </GroupBox>
+                </GroupBox>
 
-            <!-- 操作按钮 -->
-            <StackPanel Orientation="Horizontal">
-                <Button x:Name="BtnSave" Content="保存配置" Width="110"/>
-                <Button x:Name="BtnDefault" Content="恢复默认" Width="110" Margin="10 0 0 0"/>
-                <Button x:Name="BtnTestConn" Content="测试 FINS 连接" Width="130" Margin="10 0 0 0"/>
-                <TextBlock Text="（保存后需重新启动/停止监听生效）" Foreground="Gray"
-                           VerticalAlignment="Center" Margin="20 0 0 0"/>
+                <!-- 选中通道：采集数据项 -->
+                <GroupBox Header="选中通道：采集数据项（SN1/SN2/数量等，可动态增删，UI表格列自动跟随）" Margin="0 0 0 10">
+                    <StackPanel Margin="5">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="BtnAddItem" Content="＋ 新增数据项" Width="120"/>
+                            <Button x:Name="BtnDelItem" Content="－ 删除选中项" Width="120" Margin="10 0 0 0"/>
+                            <TextBlock Text="（字段名称即表格列名，寄存器地址支持 D110 / W20 / H5 等）"
+                                       Foreground="Gray" VerticalAlignment="Center" Margin="20 0 0 0"/>
+                        </StackPanel>
+                        <DataGrid x:Name="DgDataItems" Margin="0 8 0 0" Height="190"
+                                  AutoGenerateColumns="False" CanUserAddRows="False"
+                                  AlternatingRowBackground="#F5F6F8">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="字段名称" Binding="{Binding FieldName}" Width="*"/>
+                                <DataGridTextColumn Header="寄存器地址" Binding="{Binding RegisterAddr}" Width="*"/>
+                                <DataGridComboBoxColumn Header="数据类型" Width="110"
+                                                        ItemsSource="{StaticResource DataTypes}"
+                                                        SelectedItemBinding="{Binding DataType}"/>
+                                <DataGridTextColumn Header="寄存器数量" Binding="{Binding RegisterCount}" Width="90"/>
+                                <DataGridComboBoxColumn Header="编码格式" Width="100"
+                                                        ItemsSource="{StaticResource Encodings}"
+                                                        SelectedItemBinding="{Binding Encoding}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- 全局本地存储 -->
+                <GroupBox Header="全局本地存储与历史保留" Margin="0 0 0 10">
+                    <StackPanel Margin="5">
+                        <CheckBox x:Name="ChkAutoSave" Content="自动保存接收记录到各通道独立 SQLite 数据库" Margin="0 0 0 8"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170"/>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="170"/>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="监控列表最多保留(条)：" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" x:Name="TxtMaxListRows" Margin="0 0 15 4"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="日志最多保留(行)：" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="0" Grid.Column="3" x:Name="TxtMaxLogLines" Margin="0 0 15 4"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="历史数据保留天数：" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="TxtRetentionDays" Margin="0 0 15 0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3"
+                                       Text="超期记录自动删除并压缩数据库，防止无限变大变慢" Foreground="Gray" VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- 操作按钮 -->
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="BtnSave" Content="保存配置" Width="110"/>
+                    <Button x:Name="BtnDefault" Content="恢复默认" Width="110" Margin="10 0 0 0"/>
+                    <Button x:Name="BtnTestConn" Content="测试选中通道连接" Width="140" Margin="10 0 0 0"/>
+                    <TextBlock Text="（保存后通道/参数变化立即在监控与查询页重建生效）" Foreground="Gray"
+                               VerticalAlignment="Center" Margin="20 0 0 0"/>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

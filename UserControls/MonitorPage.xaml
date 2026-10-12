@@ -10,54 +10,24 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- 通信状态 -->
-        <GroupBox Header="通信状态" Grid.Row="0" Margin="0 0 0 8">
-            <Grid Margin="5">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Grid.Column="0">
-                    <Ellipse x:Name="DotState" Width="12" Height="12" Fill="Red" VerticalAlignment="Center"/>
-                    <TextBlock Margin="8 0 0 0" Text="通信状态："/>
-                    <TextBlock x:Name="TxtConnState" Text="未连接" Foreground="Red" FontWeight="Bold"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Grid.Column="1">
-                    <TextBlock Text="PLC地址："/>
-                    <TextBlock x:Name="TxtPlcIp" Text="--"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Grid.Column="2">
-                    <TextBlock Text="会话/累计接收："/>
-                    <TextBlock x:Name="TxtCnt" Text="0 / 0"/>
-                </StackPanel>
-            </Grid>
-        </GroupBox>
-
-        <!-- 实时日志 -->
-        <GroupBox Header="实时接收日志" Grid.Row="1" Margin="0 0 0 8">
-            <TextBox x:Name="TxtLog" IsReadOnly="True" Height="130" Margin="5"
-                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                     FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"/>
-        </GroupBox>
-
-        <!-- 动态数据表格 -->
-        <GroupBox Header="接收数据列表" Grid.Row="2" Margin="0 0 0 8">
-            <DataGrid x:Name="DgRecords" Margin="5" IsReadOnly="True" AutoGenerateColumns="False"
-                      SelectionMode="Extended"
-                      AlternatingRowBackground="#F5F6F8">
-            </DataGrid>
-        </GroupBox>
-
-        <!-- 底部按钮 -->
-        <StackPanel Orientation="Horizontal" Grid.Row="3">
-            <Button x:Name="BtnStart" Content="启动监听" Width="100" Margin="0 0 10 0"/>
-            <Button x:Name="BtnStop" Content="停止监听" Width="100" Margin="0 0 20 0"/>
-            <Button x:Name="BtnClear" Content="清空列表" Width="100" Margin="0 0 10 0"/>
+        <!-- 顶部按钮栏（作用于所有通道） -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0 0 0 6">
+            <Button x:Name="BtnStart" Content="启动所有通道" Width="130" Margin="0 0 10 0"/>
+            <Button x:Name="BtnStop" Content="停止所有通道" Width="130" Margin="0 0 20 0"/>
+            <Button x:Name="BtnClear" Content="清空当前列表" Width="130" Margin="0 0 10 0"/>
             <Button x:Name="BtnExportCsv" Content="导出当前列表CSV" Width="150"/>
+            <TextBlock Text="（每个通道独立页签、独立采集与数据库）" VerticalAlignment="Center"
+                       Foreground="Gray" Margin="20 0 0 0"/>
         </StackPanel>
+
+        <!-- 各通道状态一览 -->
+        <GroupBox Header="各通道状态一览" Grid.Row="1" Margin="0 0 0 8">
+            <WrapPanel x:Name="ChStatusBar" Margin="5" ItemHeight="22"/>
+        </GroupBox>
+
+        <!-- 通道页签：每个通道一个 TabItem（状态/日志/数据列表） -->
+        <TabControl x:Name="ChTab" Grid.Row="2"/>
     </Grid>
 </UserControl>

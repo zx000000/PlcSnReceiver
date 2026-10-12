@@ -20,6 +20,8 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel Orientation="Horizontal" Grid.Row="0">
+                    <TextBlock Text="通道：" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="CboChannel" Width="120" VerticalAlignment="Center" Margin="0 0 20 0"/>
                     <TextBlock Text="起始时间：" VerticalAlignment="Center"/>
                     <DatePicker x:Name="DpStart" Width="130" VerticalAlignment="Center" Margin="0 0 20 0"/>
                     <TextBlock Text="结束时间：" VerticalAlignment="Center"/>
